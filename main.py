@@ -18,6 +18,7 @@ class Parser:
     def __init__(self) -> None:
         self.session = requests.Session()
         self.flags = Docx_Regions()
+        self.info = Docx_Regions()
     
     @classmethod
     def url(cls, key):
@@ -27,7 +28,7 @@ class Parser:
         response = self.session.get(self.url('regions'))
         parser = BeautifulSoup(response.text, 'html.parser')
         table = parser.find('table')
-        regions = table.find_all('tr')[1:10]
+        regions = table.find_all('tr')[1:]
         
         
         for region in regions:
@@ -40,8 +41,10 @@ class Parser:
             print(name, status, center, square, population, *_)
             
             self.flags.add_region_images(region)
+            self.info.add_region_info(region)
             
-        self.flags.save('document.docx')
+        self.flags.save('flags.docx')
+        self.info.save('info.docx')
 
     def parse_image(self, url, name):
         response = self.session.get(url)
@@ -69,8 +72,3 @@ if __name__ == '__main__':
   
 
 
-# https://geo.koltyrin.ru/regiony_rossii.php?region=%D0%90%D0%B4%D1%8B%D0%B3%D0%B5%D1%8F
-# https://geo.koltyrin.ru/region_rossii.php?region=%D0%90%D0%B4%D1%8B%D0%B3%D0%B5%D1%8F
-
-# https://geo.koltyrin.ru/img/rus/1flag.png
-# https://geo.koltyrin.ru/img/rus/1flag.png
