@@ -18,7 +18,7 @@ class Region:
 
 
 class Docx_Regions:
-    
+
     def __init__(self) -> None:
         self.document = Document()
 
@@ -30,6 +30,7 @@ class Docx_Regions:
         section.bottom_margin = Mm(2)
 
     region_config = {
+        'default': {'style': parse_xml(r'<w:shd {} w:fill="FDEADA"/>'.format(nsdecls('w')))},
         'республика': {'style': parse_xml(r'<w:shd {} w:fill="1F5C8B"/>'.format(nsdecls('w')))},
         'край': {'style': parse_xml(r'<w:shd {} w:fill="00B94F"/>'.format(nsdecls('w')))},
         'область': {'style': parse_xml(r'<w:shd {} w:fill="FDEADA"/>'.format(nsdecls('w')))},
@@ -62,7 +63,7 @@ class Docx_Regions:
             {
                 "alignment": WD_ALIGN_PARAGRAPH.RIGHT,
                 "info": lambda region: 'Региональный центр'
-            },    
+            },
             {
                 "alignment": WD_ALIGN_PARAGRAPH.LEFT,
                 "info": lambda region: region.center
@@ -90,13 +91,20 @@ class Docx_Regions:
         ],
     ]
 
+    def get_style(self, status):
+        config = self.region_config.get(status, None)
+        if not config:
+            config = self.region_config['default']
+        return config['style']
+
     def add_region_images(self, region: Region):
         table = self.document.add_table(rows=1, cols=2, style='TableGrid')
         for row_index, row in enumerate(table.rows):
             row.height = self.region_images_row_config[row_index]['height']
             for cell_index, cell in enumerate(row.cells):
                 cell._tc.get_or_add_tcPr().append(
-                    self.region_config[region.status]['style'])
+                    self.get_style(region.status)
+                )
                 paragraph = cell.add_paragraph()
                 paragraph.alignment = self.region_images_cells_config[cell_index]['alignment']
                 run = paragraph.add_run()
