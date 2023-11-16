@@ -1,10 +1,8 @@
 from docx import Document
-from docx.shared import Inches, Cm, Mm
+from docx.shared import Mm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import parse_xml
-from docx.oxml.ns import nsdecls
 from dataclasses import dataclass
-
+from configuration import REGION_IMAGES_SELL_CONFIG, REGION_IMAGES_SELLS_CONFIG, REGION_IMAGES_ROW_CONFIG, REGION_INFO_SELLS_CONFIG, SECTION_CONFIG
 
 
 @dataclass
@@ -19,91 +17,37 @@ class Region:
 
 class Docx_Regions:
 
+    def set_section_config(self, section):
+        margin = SECTION_CONFIG.get('margin', None)
+        if not margin:
+            return
+        section.left_margin = margin.get('left', Mm(0))
+        section.right_margin = margin.get('right', Mm(0))
+        section.top_margin = margin.get('top', Mm(0))
+        section.bottom_margin = margin.get('bottom', Mm(0))
+
     def __init__(self) -> None:
         self.document = Document()
+        self.set_section_config(self.document.sections[0])
 
-        ### DOCUMENT CONFIG ###
-        section = self.document.sections[0]
-        section.left_margin = Mm(10)
-        section.right_margin = Mm(10)
-        section.top_margin = Mm(2)
-        section.bottom_margin = Mm(2)
+    region_config = REGION_IMAGES_SELL_CONFIG
 
-    region_config = {
-        'default': {'style': parse_xml(r'<w:shd {} w:fill="FDEADA"/>'.format(nsdecls('w')))},
-        'республика': {'style': parse_xml(r'<w:shd {} w:fill="1F5C8B"/>'.format(nsdecls('w')))},
-        'край': {'style': parse_xml(r'<w:shd {} w:fill="00B94F"/>'.format(nsdecls('w')))},
-        'область': {'style': parse_xml(r'<w:shd {} w:fill="FDEADA"/>'.format(nsdecls('w')))},
-        'город федерального значения': {'style': parse_xml(r'<w:shd {} w:fill="2C2C2C"/>'.format(nsdecls('w')))},
-        'автономный округ': {'style': parse_xml(r'<w:shd {} w:fill="E7A529"/>'.format(nsdecls('w')))},
-        'автономная область': {'style': parse_xml(r'<w:shd {} w:fill="185AD6"/>'.format(nsdecls('w')))}
-    }
+    region_images_row_config = REGION_IMAGES_ROW_CONFIG
 
-    region_images_row_config = [
-        {'height': Cm(5.8)}
-    ]
+    region_images_cells_config = REGION_IMAGES_SELLS_CONFIG
 
-    region_images_cells_config = [
-        {'alignment': WD_ALIGN_PARAGRAPH.CENTER, 'image_width': Inches(1.45*2), 'image_height': Inches(1.8), 'image_path': 'temp/flag.png'},
-        {'alignment': WD_ALIGN_PARAGRAPH.CENTER, 'image_width': Inches(1.6), 'image_height': Inches(1.6), 'image_path': 'temp/emblem.png'}
-    ]
+    region_info_cells_config = REGION_INFO_SELLS_CONFIG
 
-    region_info_cells_config = [
-        [
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.CENTER,
-                "info": lambda region: f"{region.status.capitalize()} {region.name}"
-            },
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.CENTER,
-                "info": lambda region: ""
-            }
-        ],
-        [
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.RIGHT,
-                "info": lambda region: 'Региональный центр'
-            },
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.LEFT,
-                "info": lambda region: region.center
-            }
-        ],
-        [
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.RIGHT,
-                "info": lambda region: 'Площадь'
-            },
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.LEFT,
-                "info": lambda region: region.square
-            }
-        ],
-        [
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.RIGHT,
-                "info": lambda region: 'Насиление'
-            },
-            {
-                "alignment": WD_ALIGN_PARAGRAPH.LEFT,
-                "info": lambda region: region.population
-            }
-        ],
-    ]
-
-    def get_style(self, status):
-        config = self.region_config.get(status, None)
-        if not config:
-            config = self.region_config['default']
-        return config['style']
+    def get_style(self):
+        return self.region_config['style']
 
     def add_region_images(self, region: Region):
-        table = self.document.add_table(rows=1, cols=2, style='TableGrid')
+        table = self.document.add_table(rows=1, cols=2, style='Table Grid')
         for row_index, row in enumerate(table.rows):
             row.height = self.region_images_row_config[row_index]['height']
             for cell_index, cell in enumerate(row.cells):
                 cell._tc.get_or_add_tcPr().append(
-                    self.get_style(region.status)
+                    self.get_style()
                 )
                 paragraph = cell.add_paragraph()
                 paragraph.alignment = self.region_images_cells_config[cell_index]['alignment']
@@ -114,7 +58,7 @@ class Docx_Regions:
         end.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     def add_region_info(self, region: Region):
-        table = self.document.add_table(rows=4, cols=2, style='TableGrid')
+        table = self.document.add_table(rows=4, cols=2, style='Table Grid')
         table.style = 'Light Shading Accent 1'
         first_column, second_column = table.rows[0].cells[:2]
         first_column.merge(second_column)  # merge columns

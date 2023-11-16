@@ -1,8 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
 from region import Region, Docx_Regions
+from configuration import OUTPUT_REGIONS_FLAGS_FILENAME, OUTPUT_REGIONS_INFO_FILENAME
 import os
 import shutil
+
 
 class Parser:
 
@@ -37,7 +39,8 @@ class Parser:
         table = parser.find('table')
         regions = table.find_all('tr')[1:]
 
-
+        print('| ' + 'Название', 'Адм. единица', 'Рег. центр', 'Площаль', 'Насиление' + ' |', sep=' | ')
+        print('-' * 62)
         for region in regions:
             fields = region.find_all('td', recursive=False)
             region_url = fields[0].a['href']
@@ -45,13 +48,13 @@ class Parser:
             region = Region(*map(lambda item: item.get_text(), fields), region_url=region_url)
 
             name, status, center, square, population, *_ = map(lambda item: item.get_text(), fields)
-            print(name, status, center, square, population, *_)
+            print('| ' + name, status, center, square, population + ' |', sep=' | ')
 
             self.flags.add_region_images(region)
             self.info.add_region_info(region)
 
-        self.flags.save('flags.docx')
-        self.info.save('info.docx')
+        self.flags.save(OUTPUT_REGIONS_FLAGS_FILENAME)
+        self.info.save(OUTPUT_REGIONS_INFO_FILENAME)
         self.clear_temp()
 
     def parse_image(self, url, name):
